@@ -1,0 +1,54 @@
+The following status messages appear on PORTA
+
+CODE	Description
+----	--------------------------------------------
+00      USER INIT section start
+
+01      bootstrap: entered bootstrap section
+02      bootstrap: finished PDBLOCK init
+03      bootstrap: finished timer0 interrupt enable
+04      bootstrap: prior to create_initial_process
+05      bootstrap: finished create_initial_process
+11	inside syscall() (syscall_interface.c)
+12      syscall() just prior to trapping
+
+13      get_ppid()  		(syscall_interface.c)
+14      inside get_pid()
+15	get_prio()
+16	set_prio()
+17	sleep()
+18	kill()
+19 	yield()
+20	suspend()
+21	wakeup()
+22	create_process()
+23	snd_msg()
+24	check_msg()
+25	get_msg()
+26	quit()
+
+27      inside K_syscall	(kernelC.c)
+28      entering schedule()
+29	dispatch()
+30      entered K_getInitSP()
+
+31	entered K_get_ppid()	(ksyscalls.c)
+32	K_get_pid()
+33	K_get_prio()
+34	K_set_prio()
+35	K_sleep()
+36	K_kill()
+37	K_yield()
+38	K_suspend()
+39	K_wakeup()
+40	K_create_process()
+41	K_snd_msg()
+42	K_check_msg()
+43	K_get_msg()
+44	K_quit()
+
+45	trap handler, just entered and pushed registers
+46	trap handler now returning to user with retval
+47	trap handler returning to user NO RETVAL
+
+255	UNRECOVERABLE KERNEL CRASH
