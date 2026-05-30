@@ -136,8 +136,20 @@ def evaluate(values, expected_single, expected_groups, forbidden):
 
 
 def load_values(path):
-    with open(path, "r", encoding="utf-8") as handle:
-        return parse_vcd_porta_values(handle.read())
+    # Auto-detect format: VCD is UTF-8 text starting with '$'; the raw binary
+    # produced by `simulavr -W 0x1b,file` is not valid VCD text.
+    try:
+        with open(path, "r", encoding="utf-8", errors="strict") as handle:
+            text = handle.read()
+        stripped = text.lstrip()
+        if stripped.startswith("$") or stripped.startswith("#"):
+            return parse_vcd_porta_values(text)
+    except UnicodeDecodeError:
+        pass
+    # Binary format: one raw byte per PORTA write, from simulavr -W.
+    with open(path, "rb") as handle:
+        data = handle.read()
+    return [(i, b) for i, b in enumerate(data)]
 
 
 def cmd_assert(args):

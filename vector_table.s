@@ -17,7 +17,10 @@
 ; to ATmega128 architecture.
 ; *************************************************
 
-; reset vector
+; The linker script places .vectors before any .text, guaranteeing byte 0x0000.
+; Without this section attribute the switch-jump-table avr-gcc emits into .text
+; would land before our vector table and displace the reset vector.
+.section .vectors,"ax",@progbits
 .org    0x0000
     jmp K_init     ; System Reset
     jmp K_panic
@@ -54,4 +57,6 @@
     jmp K_panic
     jmp K_panic
     jmp K_panic
+
+.section .text  ; switch back so K_init and ISRs go into .text, not .vectors
 

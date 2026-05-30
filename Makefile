@@ -6,12 +6,15 @@
 #****************************************************************
 
 CC      = avr-gcc
-LD      = avr-ld
+LD      = avr-gcc
 OBJCOPY = avr-objcopy
 
 MCU     = atmega128
 CFLAGS  = -mmcu=$(MCU) -O2 -g
-LDFLAGS = -arch=$(MCU)
+# -nostartfiles: kernel provides its own vector table and main: label; skip crt0.
+# Using avr-gcc as linker driver (not avr-ld directly) pulls in libgcc automatically,
+# which provides __tablejump2__ needed by the switch dispatch in K_syscall().
+LDFLAGS = -mmcu=$(MCU) -nostartfiles
 
 BUILD = build
 
