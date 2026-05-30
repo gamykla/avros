@@ -1,0 +1,12 @@
+# Build output
+build/
+
+# Compiled / generated artifacts
+*.o
+*.hex
+*.elf
+*.aps
+*.vcd
+
+# Python
+__pycache__/
