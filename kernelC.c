@@ -21,6 +21,17 @@
 
 
 
+/*******************************************************************
+ The idle task:
+ Occupies PDBLOCK slot MAX_PROCS-1. Runs when no other process is
+ S_READY. Never terminates, never sleeps, never issues syscalls.
+ The scheduler always has at least this process available.
+********************************************************************/
+void K_idle(void) {
+    while (1) { }
+}
+
+
 /********************************************************************
 create_initial_process:
     This function is used by the bootstrapping module to create
@@ -52,6 +63,53 @@ void create_initial_process() {
     // it can be loaded into SPH and SPL
     *tmp_1 = PDBLOCK[0].spl;
     *tmp_2 = PDBLOCK[0].sph;
+
+    // Install the idle task in slot MAX_PROCS-1.
+    // The idle task guarantees the scheduler always has a runnable process.
+    // Its stack frame is built identically to K_create_process(): PCL is
+    // written at the top of the stack region (highest address), PCH just
+    // below it, then 32 zero-register values — matching the layout that the
+    // interrupt epilogue pops before reti loads the PC (Defect 3).
+    {
+        unsigned int idle_slot = MAX_PROCS - 1;
+        unsigned int idle_pc = (unsigned int)K_idle;
+        unsigned char* idle_pc_bytes = (unsigned char*)&idle_pc;
+        unsigned int idle_sp_val;
+        unsigned char* idle_sp_bytes = (unsigned char*)&idle_sp_val;
+        unsigned char* idle_stack;
+        unsigned int x;
+
+        PDBLOCK[idle_slot].ppid     = 0;
+        PDBLOCK[idle_slot].priority = PRIO_LOW;
+        PDBLOCK[idle_slot].state    = S_READY;
+
+        // Store PC bytes: pcl = low byte (j[0]), pch = high byte (j[1])
+        PDBLOCK[idle_slot].pcl = idle_pc_bytes[0];
+        PDBLOCK[idle_slot].pch = idle_pc_bytes[1];
+
+        // Build the initial stack frame.  K_getInitSP(idle_slot) returns the
+        // top of the idle task's reserved stack region.
+        idle_sp_val = (unsigned int)K_getInitSP(idle_slot);
+        idle_stack   = (unsigned char*)idle_sp_val;
+
+        // Push PCL at highest address (matches K_create_process byte order)
+        *idle_stack = PDBLOCK[idle_slot].pcl;
+        idle_stack--;
+        // Push PCH just below PCL
+        *idle_stack = PDBLOCK[idle_slot].pch;
+        idle_stack--;
+
+        // Push 32 zero registers (r0-r31)
+        for (x = 0; x < 32; x++) {
+            *idle_stack = 0;
+            idle_stack--;
+        }
+
+        // idle_stack now points one below the last pushed byte; store as SP
+        idle_sp_val = (unsigned int)idle_stack;
+        PDBLOCK[idle_slot].spl = idle_sp_bytes[0];
+        PDBLOCK[idle_slot].sph = idle_sp_bytes[1];
+    }
 
     // thats it, we're ready to jump to this process now
 
@@ -230,6 +288,7 @@ void schedule() {
 
     unsigned char i, new_active;
     unsigned char prio_high;
+    unsigned char scan_count;
     char found_new;
 
     /* index of the active process */
@@ -238,8 +297,12 @@ void schedule() {
     /* get pointer to process descriptor block */
     struct PD* PDBLOCK = (struct PD*)PD_BLOCK_START;
 
-    // set the current active process to ready state
-    PDBLOCK[*active].state = S_READY;
+    // Demote the outgoing process to S_READY only if it is still S_ACTIVE.
+    // Processes in S_SLEEPING, S_BLOCKED, or S_DEAD must retain their state
+    // across a reschedule — overwriting them here was the root cause of
+    // sleep, suspend, and self-termination being non-functional (Defect 2).
+    if (PDBLOCK[*active].state == S_ACTIVE)
+        PDBLOCK[*active].state = S_READY;
 
     // here we need to determine what the maximum priority is
     // note that it must also belong to a runnable process
@@ -253,8 +316,13 @@ void schedule() {
     if ( i == MAX_PROCS )         // We don't have easy access to %  :(
         i = 0;
 
-    // we will continue until we find a process that is schedulable.
+    // Scan for the next S_READY process at prio_high, starting after the
+    // outgoing active.  scan_count caps the search at one full rotation
+    // (MAX_PROCS candidates).  If the scan exhausts all slots without a
+    // match — structurally impossible when the idle task is always S_READY
+    // at PRIO_LOW — fall back to the idle slot directly (Defect 3).
     found_new = 0;
+    scan_count = 0;
     while ( !found_new ) {
 
         // condition for finding a new active process
@@ -268,6 +336,13 @@ void schedule() {
             i++;
             if ( i == MAX_PROCS )
                 i = 0;
+            scan_count++;
+            if ( scan_count >= MAX_PROCS ) {
+                // Full rotation with no match: select the idle task slot
+                // as a guaranteed-runnable fallback.
+                new_active = MAX_PROCS - 1;
+                found_new = 1;
+            }
         }
     }// while (!found_new)
 
