@@ -158,7 +158,8 @@ Build section, and a "Build and test harness" section documenting the new
 | 10 — Issue closed | ⏳ pending merge |
 
 ### Verification run summary
-- `shellcheck tools/preflight.sh tools/run_sim.sh` → CLEAN
+- `shellcheck tools/preflight.sh tools/run_sim.sh` → CLEAN (one SC2016 info on a
+  backticked string fixed during impl, then zero findings)
 - `python3 -m py_compile tools/check_porta_trace.py` → OK
 - `python3 tools/check_porta_trace.py --self-test` → 11/11 cases passed
 - `bash -n tools/preflight.sh tools/run_sim.sh` → OK

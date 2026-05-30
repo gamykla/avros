@@ -33,7 +33,7 @@ if [ ! -f "${ELF}" ]; then
 fi
 
 if ! command -v simulavr >/dev/null 2>&1; then
-    printf 'run_sim: simulavr not installed; run `make preflight`.\n' >&2
+    printf 'run_sim: simulavr not installed; run: make preflight\n' >&2
     exit 1
 fi
 
