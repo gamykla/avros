@@ -3,7 +3,7 @@ id: 3
 name: syscall-return-value-race-and-scheduler-bugs
 type: Defect
 tier: Standard
-status: Draft
+status: Approved
 spec: N/A — technical defect, no BA spec
 ---
 
