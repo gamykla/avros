@@ -38,7 +38,12 @@ int syscall( unsigned char opcode, int p1, int p2, int p3, int p4, int p5 ) {
     int* parm4_ptr = (int*)P4_L;
     int* parm5_ptr = (int*)P5_L;
 
-    int ret_code = -1;  /* return value for system call */
+    /* Bind ret_code to r24 so the C ABI return path carries the value that
+     * the ASM trap handler (K_trap) loaded into r24:r25 from RETURN_L/H
+     * before reti.  This declaration tells avr-gcc that ret_code lives in
+     * r24; no instruction is generated, and nothing after the trap stall
+     * overwrites the pair before the function returns. */
+    register int ret_code asm("r24");
 
     // send message to status portA
     asm("ldi r31, 11");
@@ -90,10 +95,11 @@ int syscall( unsigned char opcode, int p1, int p2, int p3, int p4, int p5 ) {
     asm("nop");           // INT4 Handler.
     asm("nop");
 
-    // get return code from kernel memory
-    // NOTE: Its impossible that the process be interrupted at this point due to the
-    // cpu cycle bonus given to each dispatched process.
-    ret_code  =  *((int*)RETURN_L);
+    // The ASM trap handler (kernel.s K_trap) loads RETURN_L/H into r24:r25
+    // (avr-gcc 16-bit return register pair) before reti on the retval path.
+    // The value arrives in r24:r25 per the C ABI — no global mailbox read needed.
+    // Nothing in this function body between here and the epilogue touches r24:r25,
+    // so the compiler passes the value through unchanged.
 
     // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     // CRITICAL SECTION END

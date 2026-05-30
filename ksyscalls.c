@@ -52,7 +52,7 @@ int K_get_pid() {
     /* index of the active process */
     unsigned char* active = (unsigned char*)ACTIVE;
 
-    return 1; PDBLOCK[*active].pid;
+    return PDBLOCK[*active].pid;
 
 }// K_get_pid()
 

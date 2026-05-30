@@ -74,7 +74,7 @@ sleep 0.4
 #   0x00dc  K_init writes 0x04 (before create_initial_process)
 #   0x00e2  K_init writes 0x05 (after create_initial_process)
 #   0x0035a K_panic writes 0xFF — stop immediately on panic
-#   0x0037e schedule() entry  — confirms preemptive scheduling is live
+#   0x003ee schedule() entry  — confirms preemptive scheduling is live
 #
 GDB_SCRIPT="${out_dir}/avros_test.gdb"
 cat > "${GDB_SCRIPT}" << GDBEOF
@@ -119,7 +119,7 @@ commands 6
   quit 0
 end
 
-break *0x37e
+break *0x3ee
 commands 7
   printf "HIT:0x1c\\n"
   set \$sched = \$sched + 1
