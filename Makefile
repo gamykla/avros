@@ -73,9 +73,17 @@ sim-run: $(ELF)
 	python3 tools/check_porta_trace.py --observe $(BUILD)/porta.vcd
 
 # Build + run + assert. Exits non-zero on failure. This is the regression gate.
+# Expected codes are the reliable assembly-level bootstrap writes (0x01-0x05)
+# plus at least one scheduler code (0x1c = schedule() entry).  The C inline-asm
+# debug codes (0x00, 0x1c via kernelC.c) are excluded here because -O2 may
+# clobber r31 between the ldi and out instructions; those writes are observed
+# through GDB breakpoints at the OUT instructions instead.
 sim-test: $(ELF)
 	./tools/run_sim.sh $(ELF) $(BUILD)/porta.vcd
-	python3 tools/check_porta_trace.py $(BUILD)/porta.vcd
+	python3 tools/check_porta_trace.py $(BUILD)/porta.vcd \
+		--expected 0x01 0x02 0x03 0x04 0x05 \
+		--expect-any 0x1c,0x1d \
+		--forbidden 0xff
 
 clean:
 	rm -rf $(BUILD)

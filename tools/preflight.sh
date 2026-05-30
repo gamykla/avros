@@ -7,8 +7,8 @@
 
 set -euo pipefail
 
-readonly REQUIRED_TOOLS=(avr-gcc avr-ld avr-objcopy simulavr python3)
-readonly INSTALL_HINT="sudo apt install gcc-avr binutils-avr avr-libc simulavr"
+readonly REQUIRED_TOOLS=(avr-gcc avr-ld avr-objcopy simavr avr-gdb python3)
+readonly INSTALL_HINT="sudo apt install gcc-avr binutils-avr avr-libc simavr"
 
 missing=()
 
@@ -27,11 +27,10 @@ if [ "${#missing[@]}" -ne 0 ]; then
     exit 1
 fi
 
-# Confirm simulavr accepts the ATmega128 device model (R4). A bad device list
-# means sim-run/sim-test would fail later with a less obvious error.
-if ! simulavr --help 2>&1 | grep -qi 'atmega128'; then
-    printf '\npreflight WARNING: simulavr --help did not advertise atmega128.\n' >&2
-    printf 'The installed simulavr build may not support this device model.\n' >&2
+# Confirm simavr supports the ATmega128 device model.
+if ! simavr --list-cores 2>&1 | grep -qi 'atmega128'; then
+    printf '\npreflight WARNING: simavr --list-cores did not list atmega128.\n' >&2
+    printf 'The installed simavr build may not support this device model.\n' >&2
 fi
 
 printf '\npreflight OK: toolchain ready.\n'
