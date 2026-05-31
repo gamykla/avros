@@ -39,7 +39,7 @@ dispatcher, and individual system call logic.
 
 ---
 
-## Why it matters — especially in 2004
+## Significance of OS design
 
 In 2004, the ATmega128 was a capable but severely constrained device: 128 KB of flash,
 4 KB of on-chip SRAM, and a single-issue 8-bit ALU running at a few MHz. There was no
